@@ -24,3 +24,23 @@ def get_student(student_id: int, db: Session = Depends(get_db)):
             detail=f"Student with id {student_id} not found",
         )
     return student
+
+
+@router.post(
+    "/", response_model=schemas.StudentResponse, status_code=status.HTTP_201_CREATED
+)
+def create_student(student: schemas.StudentCreate, db: Session = Depends(get_db)):
+    existing_email = (
+        db.query(models.Student).filter(
+            models.Student.email == student.email).first()
+    )
+    if existing_email:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Email {student.email} already registered",
+        )
+    db_student = models.Student(**student.model_dump())
+    db.add(db_student)
+    db.commit()
+    db.refresh(db_student)
+    return db_student
