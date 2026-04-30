@@ -7,15 +7,18 @@ import schemas
 router = APIRouter(prefix="/students", tags=["students"])
 
 
+# get all student
 @router.get("/", response_model=list[schemas.StudentResponse])
 def get_all_students(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
     students = db.query(models.Student).offset(skip).limit(limit).all()
     return students
 
 
+# get a student
 @router.get("/{student_id}", response_model=schemas.StudentResponse)
 def get_student(student_id: int, db: Session = Depends(get_db)):
-    student = db.query(models.Student).filter(models.Student.id == student_id).first()
+    student = db.query(models.Student).filter(
+        models.Student.id == student_id).first()
     if not student:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -24,12 +27,14 @@ def get_student(student_id: int, db: Session = Depends(get_db)):
     return student
 
 
+# create student
 @router.post(
     "/", response_model=schemas.StudentResponse, status_code=status.HTTP_201_CREATED
 )
 def create_student(student: schemas.StudentCreate, db: Session = Depends(get_db)):
     existing_email = (
-        db.query(models.Student).filter(models.Student.email == student.email).first()
+        db.query(models.Student).filter(
+            models.Student.email == student.email).first()
     )
     if existing_email:
         raise HTTPException(
@@ -43,11 +48,13 @@ def create_student(student: schemas.StudentCreate, db: Session = Depends(get_db)
     return db_student
 
 
-@router.put("{student_id}", response_model=schemas.StudentResponse)
+# update student
+@router.put("/{student_id}", response_model=schemas.StudentResponse)
 def update_student(
     student_id: int, updated: schemas.StudentUpdate, db: Session = Depends(get_db)
 ):
-    student = db.query(models.Student).filter(models.Student.id == student_id).first()
+    student = db.query(models.Student).filter(
+        models.Student.id == student_id).first()
 
     if not student:
         raise HTTPException(
@@ -61,3 +68,19 @@ def update_student(
     db.commit()
     db.refresh(student)
     return student
+
+
+# delete student
+@router.delete("/{student_id}", response_model=schemas.StudentResponse)
+def delete_student(student_id: int, db: Session = Depends(get_db)):
+    student = db.query(models.Student).filter(
+        models.Student.id == student_id).first()
+
+    if not student:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Student with id {student_id} not found",
+        )
+
+    db.delete(student)
+    db.commit()
