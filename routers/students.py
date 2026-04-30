@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session, query
-from starlette.status import HTTP_404_NOT_FOUND
+from sqlalchemy.orm import Session
 from database import get_db
 import models
 import schemas
@@ -16,8 +15,7 @@ def get_all_students(skip: int = 0, limit: int = 10, db: Session = Depends(get_d
 
 @router.get("/{student_id}", response_model=schemas.StudentResponse)
 def get_student(student_id: int, db: Session = Depends(get_db)):
-    student = db.query(models.Student).filter(
-        models.Student.id == student_id).first()
+    student = db.query(models.Student).filter(models.Student.id == student_id).first()
     if not student:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -31,8 +29,7 @@ def get_student(student_id: int, db: Session = Depends(get_db)):
 )
 def create_student(student: schemas.StudentCreate, db: Session = Depends(get_db)):
     existing_email = (
-        db.query(models.Student).filter(
-            models.Student.email == student.email).first()
+        db.query(models.Student).filter(models.Student.email == student.email).first()
     )
     if existing_email:
         raise HTTPException(
@@ -44,3 +41,23 @@ def create_student(student: schemas.StudentCreate, db: Session = Depends(get_db)
     db.commit()
     db.refresh(db_student)
     return db_student
+
+
+@router.put("{student_id}", response_model=schemas.StudentResponse)
+def update_student(
+    student_id: int, updated: schemas.StudentUpdate, db: Session = Depends(get_db)
+):
+    student = db.query(models.Student).filter(models.Student.id == student_id).first()
+
+    if not student:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Student with id {student_id} not found",
+        )
+
+    for field, value in updated.model_dump(exclude_unset=True).items():
+        setattr(student, field, value)
+
+    db.commit()
+    db.refresh(student)
+    return student
