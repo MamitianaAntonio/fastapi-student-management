@@ -4,11 +4,11 @@ from datetime import datetime
 
 
 class StudentCreate(BaseModel):
-    firstName: str
-    lastName: str
+    first_name: str
+    last_name: str
     email: EmailStr
     grade: float
-    isActive: bool = True
+    is_active: bool = True
 
 
 class StudentUpdate(BaseModel):
